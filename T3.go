@@ -22,15 +22,47 @@ import (
 */
 var (
 	urlListsFile, esUrl, numThread string
+	saveIps                        bool
 	ins                            []chan int
 )
 
+/*
+域名转换为ip
+*/
+func addIps(url string) {
+	ip := url
+	if -1 < strings.Index(url, "://") {
+		a := regexp.MustCompile(`://`)
+		ip = a.Split(url, -1)[1]
+	}
+	if -1 < strings.Index(ip, "/") {
+		a := regexp.MustCompile(`/`)
+		ip = a.Split(ip, -1)[0]
+	}
+	if -1 < strings.Index(ip, ":") {
+		a := regexp.MustCompile(`:`)
+		ip = a.Split(ip, -1)[0]
+	}
+
+	// fmt.Println(ip)
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", ip) //创建一个TCPAddr
+	if err != nil {
+		return
+	}
+	ip = fmt.Sprintf("%s", tcpAddr.IP)
+	fd, _ := os.OpenFile("Ips.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	fmt.Println(ip)
+	fd_content := strings.Join([]string{ip, "\n"}, "")
+	fd.Write([]byte(fd_content))
+	fd.Close()
+}
+
 // 解决相同多次请求的问题
-func sendReq(szRst, url1 string, in chan int, szType string) {
+func sendReq(szRst, url1 string, in chan int, szType, ip string) {
 	// oSave := json.NewDecoder(`{"id":url,"url":url,"weblogic":{"T3":szRst}}`)
 	escapeUrl := url.QueryEscape(url1)
-	post_body := bytes.NewReader([]byte(fmt.Sprintf(`{"url":"%s","weblogic":{"%s":"%s"}}`, url1, szType, url.QueryEscape(szRst))))
-	// fmt.Println(szRst)
+	post_body := bytes.NewReader([]byte(fmt.Sprintf(`{"url":"%s","ip":"%s","weblogic":{"%s":"%s"}}`, url1, ip, szType, url.QueryEscape(szRst))))
+	fmt.Println(szType, " ", ip)
 	req, err := http.NewRequest("POST", esUrl+escapeUrl, post_body)
 	if err == nil {
 		req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15")
@@ -58,11 +90,16 @@ func sendReq(szRst, url1 string, in chan int, szType string) {
 
 func senData(url string, in chan int, szData, szCheck, szType string) {
 	func() {
-		a := regexp.MustCompile(`://`)
-		ip1 := a.Split(url, -1)[1]
-		a = regexp.MustCompile(`/`)
-		ip := a.Split(ip1, -1)[0]
-		if 7 > strings.Index(ip, ":") {
+		ip := url
+		if -1 < strings.Index(url, "://") {
+			a := regexp.MustCompile(`://`)
+			ip = a.Split(url, -1)[1]
+		}
+		if -1 < strings.Index(ip, "/") {
+			a := regexp.MustCompile(`/`)
+			ip = a.Split(ip, -1)[0]
+		}
+		if -1 == strings.Index(ip, ":") {
 			ip += ":80"
 		}
 		// fmt.Println(ip)
@@ -72,6 +109,7 @@ func senData(url string, in chan int, szData, szCheck, szType string) {
 			// fmt.Println(err)
 			return
 		}
+
 		tcpCoon, err := net.DialTCP("tcp4", nil, tcpAddr) //建立连接
 		if err != nil {
 			// fmt.Println("DialTCP:")
@@ -99,7 +137,7 @@ func senData(url string, in chan int, szData, szCheck, szType string) {
 		if matched {
 			// fmt.Println(recvStr)
 			// fmt.Println(url)
-			sendReq(recvStr, url, in, szType)
+			sendReq(recvStr, url, in, szType, fmt.Sprintf("%s", tcpAddr.IP))
 		}
 	}()
 	in <- 1
@@ -111,11 +149,13 @@ func sendGIOP(url string, in chan int) {
 }
 
 func sendT3(url string, in chan int) {
-	senData(url, in, "t3 12.2.1\nAS:255\nHL:19\nMS:10000000\n\n", "HELO:", "T3")
+	senData(url, in, "t3 12.2.1\nAS:255\nHL:19\nMS:10000000\n\n", "(HELO:)|(weblogic\\.security\\.net\\.FilterException)", "T3")
 }
 
 func main() {
 	flag.StringVar(&urlListsFile, "urlListsFile", "/Users/"+os.Getenv("USER")+"/MyWork/vulScanPro/T3.txt", "url lists text file")
+	flag.BoolVar(&saveIps, "saveIps", false, "save Ips to Ips.txt")
+
 	flag.StringVar(&esUrl, "esUrl", "http://127.0.0.1:9200/51pwn_index/_doc/", "es server url")
 	flag.StringVar(&numThread, "numThread", "16", "threads number")
 	flag.Parse()
@@ -149,6 +189,11 @@ func main() {
 			if -1 == strings.Index(line, "://") {
 				line = "http://" + line
 			}
+			if saveIps {
+				go addIps(line)
+				nCnt++
+			}
+
 			go sendGIOP(line, ins)
 			go sendT3(line, ins)
 			nCnt += 2
