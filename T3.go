@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -48,7 +47,7 @@ var (
 /*
 域名转换为ip
 */
-func addIps(url string, in chan int) {
+func addIps(url string) {
 	ip := url
 	if -1 < strings.Index(url, "://") {
 		a := regexp.MustCompile(`://`)
@@ -64,14 +63,12 @@ func addIps(url string, in chan int) {
 	domain := ip
 	matched, _ := regexp.Match(`(\d{1,3}\.){3}\d{1,3}`, []byte(domain))
 	if matched {
-		in <- 1
 		return
 	}
 	// fmt.Println("[", ip, "]")
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", ip) //创建一个TCPAddr
 	if err != nil {
 		fmt.Println(domain, err)
-		in <- 1
 		return
 	}
 
@@ -82,7 +79,6 @@ func addIps(url string, in chan int) {
 	fd, _ = os.OpenFile("Ips.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	fd.Write([]byte(fd_content))
 	fd.Close()
-	in <- 1
 }
 
 func IndexPrice(tweet map[string]interface{}) {
@@ -110,7 +106,7 @@ func IndexPrice(tweet map[string]interface{}) {
 }
 
 // 解决相同多次请求的问题
-func sendReq(szRst, url1 string, in chan int, szType, ip string) {
+func sendReq(szRst, url1 string, szType, ip string) {
 	type mi = map[string]interface{}
 	// data1 := fmt.Sprintf(`{"url":"%s","ip":"%s","tagName":"%s","weblogic":{"%s":"%s"}}`, url1, ip, tagName, szType, url.QueryEscape(szRst))
 	xxData := mi{"url": url1, "ip": ip, "tagName": tagName, "weblogic": mi{szType: url.QueryEscape(szRst)}}
@@ -181,66 +177,64 @@ func sendReq(szRst, url1 string, in chan int, szType, ip string) {
 	// go http.Post(resUrl, "application/json",, post_body)
 }
 
-func senData(url string, in chan int, szData, szCheck, szType string) {
-	func() {
-		ip := url
-		if -1 < strings.Index(url, "://") {
-			a := regexp.MustCompile(`://`)
-			ip = a.Split(url, -1)[1]
-		}
-		if -1 < strings.Index(ip, "/") {
-			a := regexp.MustCompile(`/`)
-			ip = a.Split(ip, -1)[0]
-		}
-		if -1 == strings.Index(ip, ":") {
-			ip += ":80"
-		}
-		// fmt.Println(ip)
-		tcpAddr, err := net.ResolveTCPAddr("tcp4", ip) //创建一个TCPAddr
-		if err != nil {
-			return
-		}
+func senData(url string, szData, szCheck, szType string) {
 
-		tcpCoon, err := net.DialTCP("tcp4", nil, tcpAddr) //建立连接
-		if err != nil {
-			// fmt.Println("DialTCP:")
-			// fmt.Println(err)
-			return
-		}
-		defer tcpCoon.Close() //关闭
-		sendData := szData
-		n, err := tcpCoon.Write([]byte(sendData)) //发送数据
-		if err != nil {
-			// fmt.Println("Write:")
-			// fmt.Println(err)
-			return
-		}
-		recvData := make([]byte, 2048)
-		n, err = tcpCoon.Read(recvData) //读取数据
-		if err != nil {
-			// fmt.Println("Read:")
-			// fmt.Println(err)
-			return
-		}
-		recvStr := string(recvData[:n])
-		matched, _ := regexp.Match(szCheck, []byte(recvStr))
+	ip := url
+	if -1 < strings.Index(url, "://") {
+		a := regexp.MustCompile(`://`)
+		ip = a.Split(url, -1)[1]
+	}
+	if -1 < strings.Index(ip, "/") {
+		a := regexp.MustCompile(`/`)
+		ip = a.Split(ip, -1)[0]
+	}
+	if -1 == strings.Index(ip, ":") {
+		ip += ":80"
+	}
+	// fmt.Println(ip)
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", ip) //创建一个TCPAddr
+	if err != nil {
+		return
+	}
 
-		if matched {
-			// fmt.Println(recvStr)
-			// fmt.Println(url)
-			sendReq(recvStr, url, in, szType, fmt.Sprintf("%s", tcpAddr.IP))
-		}
-	}()
-	in <- 1
+	tcpCoon, err := net.DialTCP("tcp4", nil, tcpAddr) //建立连接
+	if err != nil {
+		// fmt.Println("DialTCP:")
+		// fmt.Println(err)
+		return
+	}
+	defer tcpCoon.Close() //关闭
+	sendData := szData
+	n, err := tcpCoon.Write([]byte(sendData)) //发送数据
+	if err != nil {
+		// fmt.Println("Write:")
+		// fmt.Println(err)
+		return
+	}
+	recvData := make([]byte, 2048)
+	n, err = tcpCoon.Read(recvData) //读取数据
+	if err != nil {
+		// fmt.Println("Read:")
+		// fmt.Println(err)
+		return
+	}
+	recvStr := string(recvData[:n])
+	matched, _ := regexp.Match(szCheck, []byte(recvStr))
+
+	if matched {
+		// fmt.Println(recvStr)
+		// fmt.Println(url)
+		sendReq(recvStr, url, szType, fmt.Sprintf("%s", tcpAddr.IP))
+	}
 }
 
 // if r and b'GIOP' in r and b'/bea_wls_internal/classes/' in r and b':weblogic/corba/cos/naming/NamingContextAny:' in r:
-func sendGIOP(url string, in chan int) {
-	senData(url, in, "GIOP\x01\x02\x00\x03\x00\x00\x00\x17\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x0bNameService", "GIOP.*\\/bea_wls_internal\\/classes\\/.*:weblogic\\/corba\\/cos\\/naming\\/NamingContextAny:", "GIOP")
+func sendGIOP(url string) {
+	senData(url, "GIOP\x01\x02\x00\x03\x00\x00\x00\x17\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x0bNameService", "GIOP.*\\/bea_wls_internal\\/classes\\/.*:weblogic\\/corba\\/cos\\/naming\\/NamingContextAny:", "GIOP")
 }
 
-func sendT3(url string, in chan int) {
-	senData(url, in, "t3 12.2.1\nAS:255\nHL:19\nMS:10000000\n\n", "(HELO:)|(weblogic\\.security\\.net\\.FilterException)", "T3")
+func sendT3(url string) {
+	senData(url, "t3 12.2.1\nAS:255\nHL:19\nMS:10000000\n\n", "(HELO:)|(weblogic\\.security\\.net\\.FilterException)", "T3")
 }
 
 func main() {
@@ -250,17 +244,12 @@ func main() {
 	flag.BoolVar(&saveIps, "saveIps", false, "save Ips to Ips.txt")
 
 	flag.StringVar(&esUrl, "esUrl", "http://127.0.0.1:9200/51pwn_index/_doc/", "es server url")
-	flag.StringVar(&numThread, "numThread", "16", "threads number")
+	// flag.StringVar(&numThread, "numThread", "16", "threads number")
 	flag.Parse()
 	// Create a context object for the API calls
 	ctx11 = context.Background()
 	wg := &sync.WaitGroup{}
-	numT, _e := strconv.Atoi(numThread)
-	if _e != nil {
-		numT = 16
-	}
-	ins := make(chan int, numT)
-	defer close(ins)
+
 	file, err := os.OpenFile(urlListsFile, os.O_RDWR, 0666)
 	if err != nil {
 		fmt.Println("Open file error!", err)
@@ -288,10 +277,10 @@ func main() {
 					line = "http://" + line
 				}
 				if saveIps {
-					addIps(line, ins)
+					addIps(line)
 				} else {
-					sendGIOP(line, ins)
-					sendT3(line, ins)
+					sendGIOP(line)
+					sendT3(line)
 				}
 			}
 			wg.Done()

@@ -1,5 +1,14 @@
 # gohktools
 golang hack tools
+
+## default result save to elasticsearch 7.x
+```
+http://127.0.0.1:9200/51pwn_index/_doc/
+./T3 -h
+-esUrl "http://your.es.ipAndPort/51pwn_index/_doc/"
+
+```
+
 ## how test T3
 ```bash
 
