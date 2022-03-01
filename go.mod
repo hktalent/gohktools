@@ -1,6 +1,6 @@
 go 1.17
 
-module github.com/hktalent
+module github.com/hktalen/gohktools
 
 require (
 	github.com/hashicorp/mdns v1.0.5 // indirect
