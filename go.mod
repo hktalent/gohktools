@@ -1,6 +1,6 @@
 go 1.17
 
-module 51pwn.com/hktools
+module github.com/hktalent
 
 require (
 	github.com/hashicorp/mdns v1.0.5 // indirect
