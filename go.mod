@@ -1,6 +1,6 @@
 go 1.17
 
-module github.com/hktalen/gohktools
+module github.com/hktalent/gohktools
 
 require (
 	github.com/olivere/elastic/v7 v7.0.31
