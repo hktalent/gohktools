@@ -15,6 +15,7 @@ require (
 )
 
 require (
+	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 // indirect
 	github.com/coreos/go-iptables v0.4.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
 	github.com/golang/snappy v0.0.1 // indirect
