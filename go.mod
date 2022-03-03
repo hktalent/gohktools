@@ -11,6 +11,7 @@ require (
 	github.com/miekg/dns v1.1.41 // indirect
 	github.com/olivere/elastic/v7 v7.0.31 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/shiyanhui/dht v0.0.0-20201219151056-5a20f3199263 // indirect
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
 	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
 )
