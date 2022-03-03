@@ -20,10 +20,12 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/gopacket v1.1.17 // indirect
+	github.com/hashicorp/mdns v1.0.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/klauspost/reedsolomon v1.9.9 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/miekg/dns v1.1.41 // indirect
 	github.com/mmcloughlin/avo v0.0.0-20200803215136-443f81d77104 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
