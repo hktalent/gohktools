@@ -21,3 +21,12 @@ masscan --rate=5000 --top-ports 10000 -oX out.xml -iL Ips.txt
 
 ```
 
+## others
+```
+go install github.com/anacrolix/torrent/cmd/...@latest
+
+torrent download 'magnet:?xt=urn:btih:KRWPCX3SJUM4IMM4YF5RPHL6ANPYTQPU'
+torrent metainfo testdata/debian-10.8.0-amd64-netinst.iso.torrent magnet
+# https://github.com/anacrolix/torrent
+
+```
