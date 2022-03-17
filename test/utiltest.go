@@ -5,6 +5,23 @@ import (
 	"net"
 )
 
+// 获取机器macdiz，构建全球唯一机器标识
+func getMacAddr() ([]string, error) {
+	ifas, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+	var as []string
+	for _, ifa := range ifas {
+		a := ifa.HardwareAddr.String()
+		if a != "" {
+			as = append(as, a)
+		}
+	}
+	return as, nil
+}
+
+// 获取可用绑定端口
 func GetFreePort(szType string) (int, error) {
 	// var addr, err
 	if "tcp" == szType {
@@ -43,5 +60,7 @@ func main() {
 		return
 	}
 	fmt.Println("tcp port is ", n)
+	s, _ := getMacAddr()
+	fmt.Println(s)
 
 }
