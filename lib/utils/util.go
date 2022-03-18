@@ -1,7 +1,6 @@
 package test
 
 import (
-	"fmt"
 	"net"
 
 	nanoid "github.com/aidarkhanov/nanoid/v2"
@@ -15,8 +14,8 @@ func GetUuid() string {
 	return id
 }
 
-// 获取机器macdiz，构建全球唯一机器标识
-func getMacAddr() ([]string, []string, error) {
+// 获取机器mac、ip地址，构建全球唯一机器标识
+func GetMacAddr() ([]string, []string, error) {
 	ifas, err := net.Interfaces()
 	if err != nil {
 		return nil, nil, err
@@ -35,9 +34,9 @@ func getMacAddr() ([]string, []string, error) {
 	for _, address := range addrs {
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
-				fmt.Println("Current IP address : ", ipnet.IP.String())
+				// fmt.Println("Current IP address : ", ipnet.IP.String())
 				ipsAll = append(ipsAll, ipnet.IP.String())
-				fmt.Println(ipnet.IP.String())
+				// fmt.Println(ipnet.IP.String())
 			}
 		}
 	}
