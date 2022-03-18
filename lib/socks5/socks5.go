@@ -31,7 +31,8 @@ func Socks5Server(key string, fnCbk func(Socks5ServerInfo, interface{}), wg inte
 	cator := socks5.UserPassAuthenticator{Credentials: creds}
 	conf := &socks5.Config{
 		AuthMethods: []socks5.Authenticator{cator},
-		Logger:      log.New(os.Stdout, "", log.LstdFlags),
+		// Resolver:    context.NameResolver{context.Background(), "8.8.8.8"},
+		Logger: log.New(os.Stdout, "", log.LstdFlags),
 	}
 
 	// conf := &socks5.Config{}
@@ -54,3 +55,11 @@ func Socks5Server(key string, fnCbk func(Socks5ServerInfo, interface{}), wg inte
 	go fnCbk(ssi, wg)
 	return nil
 }
+
+// // github.com/txthinking/socks5
+// func Socks4Client() {
+// 	tcpTimeout := 100000
+// 	udpTimeout := 100000
+// 	c, _ := socks5.NewClient(server, username, password, tcpTimeout, udpTimeout)
+// 	conn, _ := c.Dial(network, addr)
+// }
