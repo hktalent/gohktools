@@ -30,3 +30,11 @@ torrent metainfo testdata/debian-10.8.0-amd64-netinst.iso.torrent magnet
 # https://github.com/anacrolix/torrent
 
 ```
+
+
+<!--
+
+import "github.com/olivere/elastic/v7"
+
+elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
+-->

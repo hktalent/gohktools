@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	nodeInfo "github.com/hktalent/gohktools/lib/node"
 	utils "github.com/hktalent/gohktools/lib/utils"
 
 	"github.com/armon/go-socks5"
@@ -13,6 +14,19 @@ import (
 type Socks5ServerInfo struct {
 	Port int
 	Ips  []string
+}
+
+func GetSocks5Config(key string) *socks5.Config {
+	// Create a socks server
+	creds := socks5.StaticCredentials{
+		"51pwn": key,
+	}
+	cator := socks5.UserPassAuthenticator{Credentials: creds}
+	return &socks5.Config{
+		AuthMethods: []socks5.Authenticator{cator},
+		// Resolver:    context.NameResolver{context.Background(), "8.8.8.8"},
+		Logger: log.New(os.Stdout, "", log.LstdFlags),
+	}
 }
 
 /*
@@ -24,19 +38,12 @@ func Socks5Server(key string, fnCbk func(Socks5ServerInfo, interface{}), wg inte
 	if err != nil {
 		return err
 	}
-	// Create a socks server
-	creds := socks5.StaticCredentials{
-		"51pwn": key,
-	}
-	cator := socks5.UserPassAuthenticator{Credentials: creds}
-	conf := &socks5.Config{
-		AuthMethods: []socks5.Authenticator{cator},
-		// Resolver:    context.NameResolver{context.Background(), "8.8.8.8"},
-		Logger: log.New(os.Stdout, "", log.LstdFlags),
-	}
+	conf := GetSocks5Config(key)
 
 	// conf := &socks5.Config{}
 	server, err := socks5.New(conf)
+	nodeInfo.G_nodeInfo.Socks5Port = nP
+	nodeInfo.G_nodeInfo.Socks5Server = server
 	if err != nil {
 		return err
 	}
@@ -51,6 +58,7 @@ func Socks5Server(key string, fnCbk func(Socks5ServerInfo, interface{}), wg inte
 	if nil != err {
 		return err
 	}
+	nodeInfo.G_nodeInfo.Ips = ips
 	ssi := Socks5ServerInfo{Port: nP, Ips: ips}
 	go fnCbk(ssi, wg)
 	return nil
