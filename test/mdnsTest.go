@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/hktalent/gohktools/lib/mdns"
+
+	mdns "github.com/hktalent/gohktools/lib/mdns"
 )
 
 // import (
@@ -10,6 +11,8 @@ import (
 // 	mdns "github.com/hktalent/gohktools/lib"
 // )
 func main() {
-	mdns.mdns.server4mdns("xxxx.xx", "123.33.23:55")
+	name := "xxxx.xx"
+	mdns.Server4mdns(name, "123.33.23:55")
+	mdns.Client4mdns(name)
 	fmt.Printf("start")
 }

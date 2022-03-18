@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/mdns"
 )
 
-func server4mdns(name, ipInfo string) {
+func Server4mdns(name, ipInfo string) {
 	// Setup our service export
 	host, _ := os.Hostname()
 	info := []string{ipInfo}
@@ -18,7 +18,7 @@ func server4mdns(name, ipInfo string) {
 	defer server.Shutdown()
 }
 
-func client4mdns(name string) {
+func Client4mdns(name string) {
 	// Make a channel for results and start listening
 	entriesCh := make(chan *mdns.ServiceEntry, 4)
 	go func() {
@@ -31,4 +31,3 @@ func client4mdns(name string) {
 	mdns.Lookup(name, entriesCh)
 	close(entriesCh)
 }
-
