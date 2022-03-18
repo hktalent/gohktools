@@ -3,7 +3,17 @@ package test
 import (
 	"fmt"
 	"net"
+
+	nanoid "github.com/aidarkhanov/nanoid/v2"
 )
+
+func getUuid() string {
+	id, err := nanoid.New() //> "i25_rX9zwDdDn7Sg-ZoaH"
+	if err != nil {
+		return ""
+	}
+	return id
+}
 
 // 获取机器macdiz，构建全球唯一机器标识
 func getMacAddr() ([]string, []string, error) {

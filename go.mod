@@ -16,6 +16,8 @@ require (
 
 require (
 	github.com/RoaringBitmap/roaring v0.9.4 // indirect
+	github.com/aidarkhanov/nanoid v1.0.8 // indirect
+	github.com/aidarkhanov/nanoid/v2 v2.0.5 // indirect
 	github.com/akavel/rsrc v0.8.0 // indirect
 	github.com/anacrolix/chansync v0.3.0 // indirect
 	github.com/anacrolix/confluence v1.9.0 // indirect
