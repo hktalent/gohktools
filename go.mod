@@ -126,4 +126,4 @@ require (
 	zombiezen.com/go/sqlite v0.8.0 // indirect
 )
 
-replace "github.com/hktalent/gohktools" => "./gohktools"
+replace "github.com/hktalent/gohktools" => "../gohktools"
