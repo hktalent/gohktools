@@ -125,5 +125,3 @@ require (
 	modernc.org/sqlite v1.14.2-0.20211125151325-d4ed92c0a70f // indirect
 	zombiezen.com/go/sqlite v0.8.0 // indirect
 )
-
-replace "github.com/hktalent/gohktools" => "../gohktools"

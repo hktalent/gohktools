@@ -61,20 +61,20 @@ func GetFreePort(szType string) (int, error) {
 	}
 }
 
-func main() {
-	n, err := GetFreePort("udp")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("udp port is ", n)
-	n, err = GetFreePort("tcp")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("tcp port is ", n)
-	s, _, _ := getMacAddr()
-	fmt.Println(s)
+// func main() {
+// 	n, err := GetFreePort("udp")
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	fmt.Println("udp port is ", n)
+// 	n, err = GetFreePort("tcp")
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	fmt.Println("tcp port is ", n)
+// 	s, _, _ := getMacAddr()
+// 	fmt.Println(s)
 
-}
+// }
