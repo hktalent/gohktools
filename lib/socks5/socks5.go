@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
 
 	utils "github.com/hktalent/gohktools/lib/utils"
 
@@ -20,7 +19,7 @@ type Socks5ServerInfo struct {
 传入key
 返回本机所有绑定的ip和端口信息给回调
 */
-func Socks5Server(key string, fnCbk func(Socks5ServerInfo, sync.WaitGroup), wg sync.WaitGroup) error {
+func Socks5Server(key string, fnCbk func(Socks5ServerInfo, interface{}), wg interface{}) error {
 	nP, err := utils.GetFreePort("tcp")
 	if err != nil {
 		return err
