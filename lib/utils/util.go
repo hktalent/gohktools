@@ -7,7 +7,7 @@ import (
 	nanoid "github.com/aidarkhanov/nanoid/v2"
 )
 
-func getUuid() string {
+func GetUuid() string {
 	id, err := nanoid.New() //> "i25_rX9zwDdDn7Sg-ZoaH"
 	if err != nil {
 		return ""
