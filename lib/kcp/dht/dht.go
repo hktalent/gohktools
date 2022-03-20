@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/shiyanhui/dht"
-	"net/http"
 	_ "net/http/pprof"
+
+	"github.com/shiyanhui/dht"
 )
 
 type file struct {
@@ -22,9 +22,9 @@ type bitTorrent struct {
 }
 
 func main() {
-	go func() {
-		http.ListenAndServe(":6060", nil)
-	}()
+	// go func() {
+	// 	http.ListenAndServe(":6060", nil)
+	// }()
 
 	w := dht.NewWire(65536, 1024, 256)
 	go func() {
