@@ -1,67 +1,101 @@
-/*
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2014 Juan Batiz-Benet
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * This program demonstrate a simple chat application using p2p communication.
- *
- */
 package main
 
 import (
 	"bufio"
 	"context"
-	"crypto/rand"
 	"flag"
 	"fmt"
-	"io"
-	"log"
 	"os"
+	"strings"
+	"sync"
 
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/peerstore"
-
+	"github.com/libp2p/go-libp2p-core/protocol"
+	discovery "github.com/libp2p/go-libp2p-discovery"
 	"github.com/multiformats/go-multiaddr"
+
+	"github.com/ipfs/go-log/v2"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
+	maddr "github.com/multiformats/go-multiaddr"
 )
 
-func handleStream(s network.Stream) {
-	log.Println("Got a new stream!")
+var logger = log.Logger("rendezvous")
+
+// A new type we need for writing a custom flag parser
+type addrList []maddr.Multiaddr
+
+func (al *addrList) String() string {
+	strs := make([]string, len(*al))
+	for i, addr := range *al {
+		strs[i] = addr.String()
+	}
+	return strings.Join(strs, ",")
+}
+
+func (al *addrList) Set(value string) error {
+	addr, err := maddr.NewMultiaddr(value)
+	if err != nil {
+		return err
+	}
+	*al = append(*al, addr)
+	return nil
+}
+
+func StringsToAddrs(addrStrings []string) (maddrs []maddr.Multiaddr, err error) {
+	for _, addrString := range addrStrings {
+		addr, err := maddr.NewMultiaddr(addrString)
+		if err != nil {
+			return maddrs, err
+		}
+		maddrs = append(maddrs, addr)
+	}
+	return
+}
+
+type Config struct {
+	RendezvousString string
+	BootstrapPeers   addrList
+	ListenAddresses  addrList
+	ProtocolID       string
+}
+
+func ParseFlags() (Config, error) {
+	config := Config{}
+	flag.StringVar(&config.RendezvousString, "rendezvous", "meet me here",
+		"Unique string to identify group of nodes. Share this with your friends to let them connect with you")
+	flag.Var(&config.BootstrapPeers, "peer", "Adds a peer multiaddress to the bootstrap list")
+	flag.Var(&config.ListenAddresses, "listen", "Adds a multiaddress to the listen list")
+	flag.StringVar(&config.ProtocolID, "pid", "/chat/1.1.0", "Sets a protocol id for stream headers")
+	flag.Parse()
+
+	if len(config.BootstrapPeers) == 0 {
+		config.BootstrapPeers = dht.DefaultBootstrapPeers
+	}
+
+	return config, nil
+}
+
+func handleStream(stream network.Stream) {
+	logger.Info("Got a new stream!")
 
 	// Create a buffer stream for non blocking read and write.
-	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
+	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 	go readData(rw)
 	go writeData(rw)
 
-	// stream 's' will stay open until you close it (or the other side closes it).
+	// 'stream' will stay open until you close it (or the other side closes it).
 }
 
 func readData(rw *bufio.ReadWriter) {
 	for {
-		str, _ := rw.ReadString('\n')
+		str, err := rw.ReadString('\n')
+		if err != nil {
+			fmt.Println("Error reading from buffer")
+			panic(err)
+		}
 
 		if str == "" {
 			return
@@ -82,148 +116,123 @@ func writeData(rw *bufio.ReadWriter) {
 		fmt.Print("> ")
 		sendData, err := stdReader.ReadString('\n')
 		if err != nil {
-			log.Println(err)
-			return
+			fmt.Println("Error reading from stdin")
+			panic(err)
 		}
 
-		rw.WriteString(fmt.Sprintf("%s\n", sendData))
-		rw.Flush()
+		_, err = rw.WriteString(fmt.Sprintf("%s\n", sendData))
+		if err != nil {
+			fmt.Println("Error writing to buffer")
+			panic(err)
+		}
+		err = rw.Flush()
+		if err != nil {
+			fmt.Println("Error flushing buffer")
+			panic(err)
+		}
 	}
 }
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	sourcePort := flag.Int("sp", 0, "Source port number")
-	dest := flag.String("d", "", "Destination multiaddr string")
-	key := flag.String("k", "QmYFPwjvk5naqHULiYvPAH8pg6aFvsxG83xMBVkZtw2PtK", "key uuid")
-	help := flag.Bool("help", false, "Display help")
-
-	flag.Parse()
+	log.SetAllLoggers(log.LevelWarn)
+	log.SetLogLevel("rendezvous", "info")
+	help := flag.Bool("h", false, "Display Help")
+	config, err := ParseFlags()
+	if err != nil {
+		panic(err)
+	}
 
 	if *help {
-		fmt.Printf("This program demonstrates a simple p2p chat application using libp2p\n\n")
-		fmt.Println("Usage: Run './chat -sp <SOURCE_PORT>' where <SOURCE_PORT> can be any port number.")
-		fmt.Println("Now run './chat -d <MULTIADDR>' where <MULTIADDR> is multiaddress of previous listener host.")
-
-		os.Exit(0)
-	}
-
-	// If debug is enabled, use a constant random source to generate the peer ID. Only useful for debugging,
-	// off by default. Otherwise, it uses rand.Reader.
-	var r io.Reader
-	// r = strings.NewReader(*key)
-	r = rand.Reader
-
-	h, err := makeHost(*sourcePort, r)
-	if err != nil {
-		log.Println(err)
+		fmt.Println("This program demonstrates a simple p2p chat application using libp2p")
+		fmt.Println()
+		fmt.Println("Usage: Run './chat in two different terminals. Let them connect to the bootstrap nodes, announce themselves and connect to the peers")
+		flag.PrintDefaults()
 		return
 	}
 
-	if *dest == "" {
-		startPeer(ctx, h, handleStream)
-	} else {
-		rw, err := startPeerAndConnect(ctx, h, *dest)
+	// libp2p.New constructs a new libp2p Host. Other options can be added
+	// here.
+	host, err := libp2p.New(libp2p.ListenAddrs([]multiaddr.Multiaddr(config.ListenAddresses)...))
+	if err != nil {
+		panic(err)
+	}
+	logger.Info("Host created. We are:", host.ID())
+	logger.Info(host.Addrs())
+
+	// Set a function as stream handler. This function is called when a peer
+	// initiates a connection and starts a stream with this peer.
+	host.SetStreamHandler(protocol.ID(config.ProtocolID), handleStream)
+
+	// Start a DHT, for use in peer discovery. We can't just make a new DHT
+	// client because we want each peer to maintain its own local copy of the
+	// DHT, so that the bootstrapping node of the DHT can go down without
+	// inhibiting future peer discovery.
+	ctx := context.Background()
+	kademliaDHT, err := dht.New(ctx, host)
+	if err != nil {
+		panic(err)
+	}
+
+	// Bootstrap the DHT. In the default configuration, this spawns a Background
+	// thread that will refresh the peer table every five minutes.
+	logger.Debug("Bootstrapping the DHT")
+	if err = kademliaDHT.Bootstrap(ctx); err != nil {
+		panic(err)
+	}
+
+	// Let's connect to the bootstrap nodes first. They will tell us about the
+	// other nodes in the network.
+	var wg sync.WaitGroup
+	for _, peerAddr := range config.BootstrapPeers {
+		peerinfo, _ := peer.AddrInfoFromP2pAddr(peerAddr)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := host.Connect(ctx, *peerinfo); err != nil {
+				logger.Warning(err)
+			} else {
+				logger.Info("Connection established with bootstrap node:", *peerinfo)
+			}
+		}()
+	}
+	wg.Wait()
+
+	// We use a rendezvous point "meet me here" to announce our location.
+	// This is like telling your friends to meet you at the Eiffel Tower.
+	logger.Info("Announcing ourselves...")
+	routingDiscovery := discovery.NewRoutingDiscovery(kademliaDHT)
+	discovery.Advertise(ctx, routingDiscovery, config.RendezvousString)
+	logger.Debug("Successfully announced!")
+
+	// Now, look for others who have announced
+	// This is like your friend telling you the location to meet you.
+	logger.Debug("Searching for other peers...")
+	peerChan, err := routingDiscovery.FindPeers(ctx, config.RendezvousString)
+	if err != nil {
+		panic(err)
+	}
+
+	for peer := range peerChan {
+		if peer.ID == host.ID() {
+			continue
+		}
+		logger.Debug("Found peer:", peer)
+
+		logger.Debug("Connecting to:", peer)
+		stream, err := host.NewStream(ctx, peer.ID, protocol.ID(config.ProtocolID))
+
 		if err != nil {
-			log.Println(err)
-			return
+			logger.Warning("Connection failed:", err)
+			continue
+		} else {
+			rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+
+			go writeData(rw)
+			go readData(rw)
 		}
 
-		// Create a thread to read and write data.
-		go writeData(rw)
-		go readData(rw)
-
+		logger.Info("Connected to:", peer)
 	}
 
-	// Wait forever
 	select {}
-}
-
-func makeHost(port int, randomness io.Reader) (host.Host, error) {
-	// Creates a new RSA key pair for this host.
-	prvKey, _, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, randomness)
-	log.Println(randomness)
-	if err != nil {
-		log.Println("makeHost")
-		log.Println(err)
-		return nil, err
-	}
-
-	// 0.0.0.0 will listen on any interface device.
-	sourceMultiAddr, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port))
-
-	// libp2p.New constructs a new libp2p Host.
-	// Other options can be added here.
-	return libp2p.New(
-		libp2p.ListenAddrs(sourceMultiAddr),
-		libp2p.Identity(prvKey),
-	)
-}
-
-func startPeer(ctx context.Context, h host.Host, streamHandler network.StreamHandler) {
-	// Set a function as stream handler.
-	// This function is called when a peer connects, and starts a stream with this protocol.
-	// Only applies on the receiving side.
-	h.SetStreamHandler("/chat/1.0.0", streamHandler)
-
-	// Let's get the actual TCP port from our listen multiaddr, in case we're using 0 (default; random available port).
-	var port string
-	for _, la := range h.Network().ListenAddresses() {
-		if p, err := la.ValueForProtocol(multiaddr.P_TCP); err == nil {
-			port = p
-			break
-		}
-	}
-
-	if port == "" {
-		log.Println("was not able to find actual local port")
-		return
-	}
-
-	log.Printf("Run './chat -d /ip4/127.0.0.1/tcp/%v/p2p/%s' on another console.\n", port, h.ID().Pretty())
-	log.Println("You can replace 127.0.0.1 with public IP as well.")
-	log.Println("Waiting for incoming connection")
-	log.Println()
-}
-
-func startPeerAndConnect(ctx context.Context, h host.Host, destination string) (*bufio.ReadWriter, error) {
-	log.Println("This node's multiaddresses:")
-	for _, la := range h.Addrs() {
-		log.Printf(" - %v\n", la)
-	}
-	log.Println()
-
-	// Turn the destination into a multiaddr.
-	maddr, err := multiaddr.NewMultiaddr(destination)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	// Extract the peer ID from the multiaddr.
-	info, err := peer.AddrInfoFromP2pAddr(maddr)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	// Add the destination's peer multiaddress in the peerstore.
-	// This will be used during connection and stream creation by libp2p.
-	h.Peerstore().AddAddrs(info.ID, info.Addrs, peerstore.PermanentAddrTTL)
-
-	// Start a stream with the destination.
-	// Multiaddress of the destination peer is fetched from the peerstore using 'peerId'.
-	s, err := h.NewStream(context.Background(), info.ID, "/chat/1.0.0")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	log.Println("Established connection to destination")
-
-	// Create a buffered stream so that read and writes are non blocking.
-	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
-
-	return rw, nil
 }
