@@ -1,10 +1,36 @@
-package test
+package utils
 
 import (
+	"fmt"
 	"net"
 
 	nanoid "github.com/aidarkhanov/nanoid/v2"
+	"github.com/ipfs/go-cid"
+	mh "github.com/multiformats/go-multihash"
 )
+
+/*
+Creating a CID from scratch
+*/
+func GenCid(s string) string {
+	pref := cid.Prefix{
+		Version:  1,
+		Codec:    cid.Raw,
+		MhType:   mh.SHA2_256,
+		MhLength: -1, // default length
+	}
+
+	// And then feed it some data
+	// bafkreico4cwnommwxfopkyny63sznyup24g2fzbry3kvmbrvfmkcgud35a
+	c, err := pref.Sum([]byte(s))
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+
+	fmt.Println("Created CID: ", c)
+	return fmt.Sprint(c)
+}
 
 func GetUuid() string {
 	id, err := nanoid.New() //> "i25_rX9zwDdDn7Sg-ZoaH"

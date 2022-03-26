@@ -1,35 +1,26 @@
 package main
 
+// "github.com/hktalent/gohktools/lib/iface/protocol/PwnDht"
 import (
+	"context"
 	"fmt"
 
-	"github.com/ipfs/go-cid"
-	mh "github.com/multiformats/go-multihash"
+	"github.com/libp2p/go-libp2p"
+	disc "github.com/libp2p/go-libp2p-discovery"
+	kaddht "github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/multiformats/go-multiaddr"
 )
 
-/*
-Creating a CID from scratch
-*/
-func GenCid(s string) string {
-	pref := cid.Prefix{
-		Version:  1,
-		Codec:    cid.Raw,
-		MhType:   mh.SHA2_256,
-		MhLength: -1, // default length
+func StringsToAddrs(addrStrings []string) (maddrs []multiaddr.Multiaddr, err error) {
+	for _, addrString := range addrStrings {
+		addr, err := multiaddr.NewMultiaddr(addrString)
+		if err != nil {
+			return maddrs, err
+		}
+		maddrs = append(maddrs, addr)
 	}
-
-	// And then feed it some data
-	// bafkreico4cwnommwxfopkyny63sznyup24g2fzbry3kvmbrvfmkcgud35a
-	c, err := pref.Sum([]byte(s))
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-
-	fmt.Println("Created CID: ", c)
-	return fmt.Sprint(c)
+	return
 }
-
 func main() {
 	// idHex := "68747470733a2f2f646874346861636b65722e353170776e2e636f6d68747470733a2f2f646874346861636b65722e353170776e2e636f6d"
 	// idBytes, err := hex.DecodeString(idHex)
@@ -49,7 +40,39 @@ func main() {
 	// }
 	// defer s.Close()
 	// https://stun4dht4hackers.51pwn.com
+	// var myDht = PwnDht.New()
+	// myDht.Start()
+	// fmt.Println(myDht)
 
-	fmt.Println(GenCid("https://stun4dht4hackers.51pwn.com"))
+	chatProtocol := "/51pwn/p2p/dht/1.1.0"
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	mm, err := StringsToAddrs([]string{"/ip4/0.0.0.0/udp/3344"})
+	if err != nil {
+		panic(err)
+	}
+	host, err := libp2p.New(libp2p.ListenAddrs(mm...))
+
+	if err != nil {
+		panic(err)
+	}
+	// host := dht.DefaultBootstrapPeers
+
+	dht, err := kaddht.New(ctx, host)
+	if err != nil {
+		panic(err)
+	}
+
+	routingDiscovery := disc.NewRoutingDiscovery(dht)
+	disc.Advertise(ctx, routingDiscovery, string(chatProtocol))
+	peers, err := disc.FindPeers(ctx, routingDiscovery, string(chatProtocol))
+	if err != nil {
+		panic(err)
+	}
+	for _, peer := range peers {
+		fmt.Println(peer)
+		// notifee.HandlePeerFound(peer)
+	}
 
 }
