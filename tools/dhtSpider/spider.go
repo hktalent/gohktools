@@ -11,24 +11,11 @@ import (
 	"time"
 
 	"github.com/hktalent/dht"
-	stlist "github.com/hktalent/gohktools/lib/utils"
 )
 
-// type RawUnicodeString string
-
-// func (this *RawUnicodeString) UnmarshalJSON(b []byte) error {
-// 	*this = RawUnicodeString(b)
-// 	return nil
-// }
-
-// func (this RawUnicodeString) MarshalJSON() ([]byte, error) {
-// 	return []byte(this), nil
-// }
-
 type file struct {
-	Path []interface{} `json:"path"`
-	// Path   []RawUnicodeString `json:"path"`
-	Length int `json:"length"`
+	Path   []interface{} `json:"path"`
+	Length int           `json:"length"`
 }
 
 type bitTorrent struct {
@@ -39,8 +26,7 @@ type bitTorrent struct {
 }
 
 var (
-	PrimeNodes = stlist.StunList{}.GetDhtListRawA()
-	resUrl     = ""
+	resUrl = "http://127.0.0.1:9200/dht_index/_doc/"
 	// len = 40
 	myPeerId = hex.EncodeToString([]byte("https://ee.51pwn.com")[:20])
 )
@@ -98,7 +84,7 @@ Content-Length: 291
 }
 */
 func sendReq(data []byte, id string) {
-	fmt.Println("start send to es " + id)
+	fmt.Println("start send to ", resUrl, " es "+id)
 	// Post "77beaaf8081e4e45adb550194cc0f3a62ebb665f": unsupported protocol scheme ""
 	req, err := http.NewRequest("POST", resUrl+id, bytes.NewReader(data))
 	if err != nil {
@@ -153,13 +139,18 @@ func getMyPeer(d *dht.DHT) {
 }
 
 func main() {
-	resUrl := flag.String("resUrl", "http://127.0.0.1:9200/dht_index/_doc/", "Elasticsearch url, eg: http://127.0.0.1:9200/dht_index/_doc/")
+	resUrl := flag.String("resUrl", "", "Elasticsearch url, eg: http://127.0.0.1:9200/dht_index/_doc/")
+	if "" == *resUrl {
+		*resUrl = "http://127.0.0.1:9200/dht_index/_doc/"
+	}
 	flag.Parse()
 	go func() {
 		http.ListenAndServe(":6060", nil)
 	}()
 
-	w := dht.NewWire(65536, 1024, 256)
+	nX := 10
+	// blackListSize, requestQueueSize, workerQueueSize
+	w := dht.NewWire(65536, 1024*nX, 256*nX)
 	go func() {
 		for resp := range w.Response() {
 			metadata, err := dht.Decode(resp.MetadataInfo)
@@ -184,8 +175,7 @@ func main() {
 				for i, item := range files {
 					f := item.(map[string]interface{})
 					bt.Files[i] = file{
-						Path: f["path"].([]interface{}),
-						// Path:   f["path"].([]RawUnicodeString),
+						Path:   f["path"].([]interface{}),
 						Length: f["length"].(int),
 					}
 				}
@@ -205,8 +195,6 @@ func main() {
 	go w.Run()
 
 	config := dht.NewCrawlConfig()
-	config.PrimeNodes = PrimeNodes
-	config.Address = "0.0.0.0:0"
 	config.OnAnnouncePeer = func(infoHash, ip string, port int) {
 		w.Request([]byte(infoHash), ip, port)
 	}
@@ -215,6 +203,9 @@ func main() {
 	d.OnGetPeersResponse = func(infoHash string, peer *dht.Peer) {
 		if infoHash == myPeerId {
 			fmt.Printf("my private net: <%s:%d>\n", peer.IP, peer.Port)
+		} else if 0 < len(*resUrl) {
+			sendReq([]byte(fmt.Sprintf("{\"ip\":\"%s\",\"port\":%d,\"type\":\"peer\"}", peer.IP, peer.Port)), fmt.Sprintf("%s_%d", peer.IP, peer.Port))
+			fmt.Printf("peer info : %s:%d\n", peer.IP, peer.Port)
 		}
 	}
 	go getMyPeer(d)
