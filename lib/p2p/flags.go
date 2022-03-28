@@ -4,7 +4,7 @@ import (
 	"flag"
 	"strings"
 
-	stlist "github.com/hktalent/gohktools/lib/utils"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -56,8 +56,10 @@ func ParseFlags() (Config, error) {
 	flag.Parse()
 
 	if len(config.BootstrapPeers) == 0 {
+		// stlist "github.com/hktalent/gohktools/lib/utils"
+		// config.BootstrapPeers = stlist.StunList{}.GetDhtMma() // dht.DefaultBootstrapPeers
 		// dht "github.com/libp2p/go-libp2p-kad-dht"
-		config.BootstrapPeers = stlist.StunList{}.getDhtMma() // dht.DefaultBootstrapPeers
+		config.BootstrapPeers = dht.DefaultBootstrapPeers
 
 	}
 

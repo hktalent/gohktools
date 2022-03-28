@@ -19,7 +19,7 @@ type IStunList interface {
 }
 type StunList struct{}
 
-func (r StunList) getDhtMma() []multiaddr.Multiaddr {
+func (r StunList) GetDhtMma() []multiaddr.Multiaddr {
 	var mma []multiaddr.Multiaddr
 	a := r.GetDhtList()
 	for _, s := range a {
@@ -31,8 +31,17 @@ func (r StunList) getDhtMma() []multiaddr.Multiaddr {
 	}
 	return mma
 }
-
-func (r StunList) GetDhtList() []string {
+func (r StunList) GetDhtListArr() [][]string {
+	a := r.GetDhtList()
+	var aRst [][]string
+	for _, x := range a {
+		if -1 == strings.Index(x, "://") {
+			aRst = append(aRst, []string{"udp://" + x})
+		}
+	}
+	return aRst
+}
+func (r StunList) GetDhtListRawA() []string {
 	return strings.Split(`1.11.150.35:40924
 1.156.133.185:40945
 1.161.238.105:16001
@@ -4007,8 +4016,24 @@ dht.transmissionbt.com:6881
 router.bitcomet.com:6881
 router.bittorrent.cloud:42069
 router.bittorrent.com:6881
+coppersurfer.tk:6969/announce
 router.silotis.us:6881
+open.demonii.com:1337
+http://p4p.arenabg.com:1337/announce
+udp://tracker.opentrackr.org:1337/announce
+udp://tracker.openbittorrent.com:6969/announce
+http://bttracker.crunchbanglinux.org:6969/announce
 router.utorrent.com:6881`, "\n")
+}
+
+func (r StunList) GetDhtList() []string {
+	a := r.GetDhtListRawA()
+	for i, x := range a {
+		if -1 == strings.Index(x, "://") {
+			a[i] = "udp://" + x
+		}
+	}
+	return a
 }
 
 func (r StunList) GetStunList() []string {
