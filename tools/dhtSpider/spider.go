@@ -10,8 +10,8 @@ import (
 	_ "net/http/pprof"
 	"time"
 
+	"github.com/hktalent/dht"
 	stlist "github.com/hktalent/gohktools/lib/utils"
-	"github.com/shiyanhui/dht"
 )
 
 // type RawUnicodeString string
@@ -42,7 +42,7 @@ var (
 	PrimeNodes = stlist.StunList{}.GetDhtListRawA()
 	resUrl     = ""
 	// len = 40
-	myPeerId = hex.EncodeToString([]byte("https://ee.51pwn.com")[0:20])
+	myPeerId = hex.EncodeToString([]byte("https://ee.51pwn.com")[:20])
 )
 
 /*
@@ -98,32 +98,37 @@ Content-Length: 291
 }
 */
 func sendReq(data []byte, id string) {
+	fmt.Println("start send to es " + id)
+	// Post "77beaaf8081e4e45adb550194cc0f3a62ebb665f": unsupported protocol scheme ""
 	req, err := http.NewRequest("POST", resUrl+id, bytes.NewReader(data))
-	if err == nil {
-		// 取消全局复用连接
-		// tr := http.Transport{DisableKeepAlives: true}
-		// client := http.Client{Transport: &tr}
-		req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15")
-		req.Header.Add("Content-Type", "application/json;charset=UTF-8")
-		// keep-alive
-		req.Header.Add("Connection", "close")
-		req.Close = true
-
-		resp, err := http.DefaultClient.Do(req)
-		if resp != nil {
-			defer resp.Body.Close() // resp 可能为 nil，不能读取 Body
-		}
-		if err != nil {
-			// fmt.Println(err)
-			return
-		}
-
-		// body, err := ioutil.ReadAll(resp.Body)
-		// _, err = io.Copy(ioutil.Discard, resp.Body) // 手动丢弃读取完毕的数据
-		// json.NewDecoder(resp.Body).Decode(&data)
-		fmt.Println("[send request] " + id)
-		// req.Body.Close()
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
+	// 取消全局复用连接
+	// tr := http.Transport{DisableKeepAlives: true}
+	// client := http.Client{Transport: &tr}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15")
+	req.Header.Add("Content-Type", "application/json;charset=UTF-8")
+	// keep-alive
+	req.Header.Add("Connection", "close")
+	req.Close = true
+
+	resp, err := http.DefaultClient.Do(req)
+	if resp != nil {
+		defer resp.Body.Close() // resp 可能为 nil，不能读取 Body
+	}
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// body, err := ioutil.ReadAll(resp.Body)
+	// _, err = io.Copy(ioutil.Discard, resp.Body) // 手动丢弃读取完毕的数据
+	// json.NewDecoder(resp.Body).Decode(&data)
+	fmt.Println("[send request] " + id)
+	// req.Body.Close()
+
 	// go http.Post(resUrl, "application/json",, post_body)
 }
 
@@ -132,7 +137,7 @@ func sendReq(data []byte, id string) {
 可在这些使用者之间建立通讯
 */
 func getMyPeer(d *dht.DHT) {
-	fmt.Println(myPeerId)
+	fmt.Println("getMyPeer " + myPeerId)
 	for {
 		err := d.GetPeers(myPeerId)
 		if err != nil && err != dht.ErrNotReady {
@@ -190,10 +195,6 @@ func main() {
 
 			data, err := json.Marshal(bt)
 			if err == nil {
-				/*
-					{"infohash":"c26f75cf75a989c0d6590b1272a563008dd9dfee","name":"Dexter.New.Blood.S01E03.1080p.WEB.H264-GGEZ[rarbg]","files":[{"path":["RARBG.txt"],"length":30},{"path":["RARBG_DO_NOT_MIRROR.exe"],"length":99},{"path":["dexter.new.blood.s01e03.1080p.web.h264-ggez.mkv"],"length":2644144022},{"path":["dexter.new.blood.s01e03.1080p.web.h264-ggez.nfo"],"length":44}]}
-
-				*/
 				if 0 < len(*resUrl) {
 					sendReq(data, bt.InfoHash)
 				}
@@ -210,11 +211,13 @@ func main() {
 		w.Request([]byte(infoHash), ip, port)
 	}
 	d := dht.New(config)
+	// d.Mode = &dht.newNode(myPeerId, "", config.Address)
 	d.OnGetPeersResponse = func(infoHash string, peer *dht.Peer) {
 		if infoHash == myPeerId {
 			fmt.Printf("my private net: <%s:%d>\n", peer.IP, peer.Port)
 		}
 	}
 	go getMyPeer(d)
+	fmt.Println("start run ...")
 	d.Run()
 }
