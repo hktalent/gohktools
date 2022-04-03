@@ -6,7 +6,7 @@ import (
 	"fmt"
 	_ "net/http/pprof"
 
-	"github.com/shiyanhui/dht"
+	"github.com/hktalent/dht"
 )
 
 type file struct {
