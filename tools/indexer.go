@@ -69,9 +69,9 @@ func readFileLines(logfile string, fnCbk func(string)) {
 	}
 }
 
-// ./indexer -filename="/Users/51pwn/sgk1/BreachCompilation/data/0/0"
-// ls /Users/51pwn/sgk1/BreachCompilation/data/0/?|xargs -I % ./indexer -filename="%"
-// find  /Users/51pwn/sgk1/BreachCompilation/data|xargs -I % ./indexer -filename="%"
+// ./indexer -filename="${HOME}/sgk1/BreachCompilation/data/0/0"
+// ls $HOME/sgk1/BreachCompilation/data/0/?|xargs -I % ./indexer -filename="%"
+// find  $HOME/sgk1/BreachCompilation/data|xargs -I % ./indexer -filename="%"
 func main() {
 	log.SetFlags(0)
 	var wg sync.WaitGroup
