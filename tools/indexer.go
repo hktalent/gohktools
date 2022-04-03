@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -69,6 +70,8 @@ func readFileLines(logfile string, fnCbk func(string)) {
 }
 
 // ./indexer -filename="/Users/51pwn/sgk1/BreachCompilation/data/0/0"
+// ls /Users/51pwn/sgk1/BreachCompilation/data/0/?|xargs -I % ./indexer -filename="%"
+// find  /Users/51pwn/sgk1/BreachCompilation/data|xargs -I % ./indexer -filename="%"
 func main() {
 	log.SetFlags(0)
 	var wg sync.WaitGroup
@@ -127,49 +130,65 @@ func main() {
 			wg.Add(1)
 			defer wg.Done()
 			line := line1
-			n := strings.Index(line, ":")
-			i := strings.Index(line, ";")
-			x := len(line) - 1
-			if 1 < n {
-				x = n
+			reg1 := regexp.MustCompile(`(^[^:;]+)`)
+			var (
+				uid, pswd string
+			)
+			uid = ""
+			if reg1 != nil {
+				result1 := reg1.FindAllStringSubmatch(line, -1)
+				for _, text := range result1 {
+					uid = text[1]
+					break
+				}
 			}
-			if 1 < i && x > i {
-				x = i
-			}
+			if "" == uid {
+				n := strings.Index(line, ":")
+				i := strings.Index(line, ";")
+				x := len(line) - 1
+				if 1 < n {
+					x = n
+				}
+				if 1 < i && x > i {
+					x = i
+				}
 
-			uid := line[:x]
-			pswd := line[x+1:]
+				uid = line[:x]
+			}
+			pswd = line[len(uid)+1:]
 			data := map[string]interface{}{"uid": uid, "pswd": []string{pswd}}
 			bData, err := json.Marshal(data)
 			if err != nil {
 				return
 			}
 			fmt.Println(string(bData))
-			err = bi.Add(
-				context.Background(),
-				esutil.BulkIndexerItem{
-					// Action field configures the operation to perform (index, create, delete, update)
-					Action: "index",
-					// DocumentID is the (optional) document ID
-					DocumentID: uid,
-					// Body is an `io.Reader` with the payload
-					Body: bytes.NewReader(bData),
-					// OnSuccess is called for each successful operation
-					OnSuccess: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem) {
-						atomic.AddUint64(&countSuccessful, 1)
+			if "" != uid {
+				err = bi.Add(
+					context.Background(),
+					esutil.BulkIndexerItem{
+						// Action field configures the operation to perform (index, create, delete, update)
+						Action: "index",
+						// DocumentID is the (optional) document ID
+						DocumentID: uid,
+						// Body is an `io.Reader` with the payload
+						Body: bytes.NewReader(bData),
+						// OnSuccess is called for each successful operation
+						OnSuccess: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem) {
+							atomic.AddUint64(&countSuccessful, 1)
+						},
+						// OnFailure is called for each failed operation
+						OnFailure: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
+							if err != nil {
+								log.Printf("ERROR: %s", err)
+							} else {
+								log.Printf("ERROR: %s: %s", res.Error.Type, res.Error.Reason)
+							}
+						},
 					},
-					// OnFailure is called for each failed operation
-					OnFailure: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
-						if err != nil {
-							log.Printf("ERROR: %s", err)
-						} else {
-							log.Printf("ERROR: %s: %s", res.Error.Type, res.Error.Reason)
-						}
-					},
-				},
-			)
-			if err != nil {
-				log.Fatalf("Unexpected error: %s", err)
+				)
+				if err != nil {
+					log.Fatalf("Unexpected error: %s", err)
+				}
 			}
 		}()
 	})
