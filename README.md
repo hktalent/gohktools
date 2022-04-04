@@ -4,12 +4,10 @@
 # gohktools
 golang hack tools
 
-## default result save to elasticsearch 7.x
-```
-http://127.0.0.1:9200/51pwn_index/_doc/
+## weblogic T3/GIOP batch testing，default result save to elasticsearch 7.x http://127.0.0.1:9200/51pwn_index/_doc/
+```bash
 ./T3 -h
 -esUrl "http://your.es.ipAndPort/51pwn_index/_doc/"
-
 ```
 
 ## how test T3
@@ -27,6 +25,16 @@ cat Ips.txt|sort -u|uniq>Ips1.txt; mv Ips1.txt Ips.txt
 masscan --rate=5000 --top-ports 10000 -oX out.xml -iL Ips.txt
 
 ```
+
+# tools
+- DHT spider
+tools/dhtSpider/spider.go
+- Social worker data[;:], stored in elasticsearch
+tools/indexer.go
+```bash
+find  $HOME/sgk1/BreachCompilation/data|xargs -I % ./indexer -filename="%"
+```
+
 
 ## others
 ```
