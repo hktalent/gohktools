@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hktalent/gohktools/lib/internal/signal"
 	stlist "github.com/hktalent/gohktools/lib/utils"
 	"github.com/pion/webrtc/v3"
 )
@@ -284,25 +283,25 @@ func main() {
 		}
 	})
 	// Register channel opening handling
-	dataChannel.OnOpen(func() {
-		fmt.Printf("Data channel '%s'-'%d' open. Random messages will now be sent to any connected DataChannels every 5 seconds\n", dataChannel.Label(), dataChannel.ID())
+	// dataChannel.OnOpen(func() {
+	// 	fmt.Printf("Data channel '%s'-'%d' open. Random messages will now be sent to any connected DataChannels every 5 seconds\n", dataChannel.Label(), dataChannel.ID())
 
-		for range time.NewTicker(5 * time.Second).C {
-			message := signal.RandSeq(15)
-			fmt.Printf("Sending '%s'\n", message)
+	// 	for range time.NewTicker(5 * time.Second).C {
+	// 		message := signal.RandSeq(15)
+	// 		fmt.Printf("Sending '%s'\n", message)
 
-			// Send the message as text
-			sendTextErr := dataChannel.SendText(message)
-			if sendTextErr != nil {
-				panic(sendTextErr)
-			}
-		}
-	})
+	// 		// Send the message as text
+	// 		sendTextErr := dataChannel.SendText(message)
+	// 		if sendTextErr != nil {
+	// 			panic(sendTextErr)
+	// 		}
+	// 	}
+	// })
 
-	// Register text message handling
-	dataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
-		fmt.Printf("Message from DataChannel '%s': '%s'\n", dataChannel.Label(), string(msg.Data))
-	})
+	// // Register text message handling
+	// dataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
+	// 	fmt.Printf("Message from DataChannel '%s': '%s'\n", dataChannel.Label(), string(msg.Data))
+	// })
 	// Create an offer to send to the other process
 	offer1, err := peerConnection.CreateOffer(nil)
 	if err != nil {

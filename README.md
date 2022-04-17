@@ -28,9 +28,11 @@ masscan --rate=5000 --top-ports 10000 -oX out.xml -iL Ips.txt
 
 # tools
 - DHT spider
-tools/dhtSpider/spider.go
+https://github.com/hktalent/dht/blob/master/sample/spider/spider.go
+
 - Social worker data[;:], stored in elasticsearch
 tools/indexer.go
+
 ```bash
 find  $HOME/sgk1/BreachCompilation/data|xargs -I % ./indexer -filename="%"
 ```
