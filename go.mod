@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/mdns v1.0.5
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87
 	github.com/hktalent/dht v1.2.1
-	github.com/ipfs/go-cid v0.1.0
+	github.com/ipfs/go-cid v0.3.2
 	github.com/ipfs/go-log/v2 v2.5.0
 	github.com/libp2p/go-libp2p v0.18.1
 	github.com/libp2p/go-libp2p-core v0.14.0
@@ -27,7 +27,7 @@ require (
 	github.com/libp2p/go-tcp-transport v0.5.1
 	github.com/libp2p/go-ws-transport v0.6.0
 	github.com/multiformats/go-multiaddr v0.5.0
-	github.com/multiformats/go-multihash v0.1.0
+	github.com/multiformats/go-multihash v0.2.1
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/pion/randutil v0.1.0
 	github.com/pion/webrtc/v3 v3.1.27
@@ -69,7 +69,6 @@ require (
 	github.com/elastic/gosigar v0.14.2 // indirect
 	github.com/flynn/noise v1.0.0 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
-	github.com/frankban/quicktest v1.14.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
@@ -87,7 +86,7 @@ require (
 	github.com/ipfs/go-ipfs-util v0.0.2 // indirect
 	github.com/ipfs/go-ipns v0.1.2 // indirect
 	github.com/ipfs/go-log v1.0.5 // indirect
-	github.com/ipld/go-ipld-prime v0.9.0 // indirect
+	github.com/ipld/go-ipld-prime v0.19.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
 	github.com/jbenet/goprocess v0.1.4 // indirect
@@ -134,7 +133,6 @@ require (
 	github.com/miekg/dns v1.1.47 // indirect
 	github.com/mikioh/tcpinfo v0.0.0-20190314235526-30a79bb1804b // indirect
 	github.com/mikioh/tcpopt v0.0.0-20190314235656-172688c1accc // indirect
-	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiformats/go-base32 v0.0.4 // indirect
@@ -142,7 +140,7 @@ require (
 	github.com/multiformats/go-multiaddr-dns v0.3.1 // indirect
 	github.com/multiformats/go-multiaddr-fmt v0.1.0 // indirect
 	github.com/multiformats/go-multibase v0.0.3 // indirect
-	github.com/multiformats/go-multicodec v0.2.0 // indirect
+	github.com/multiformats/go-multicodec v0.6.0 // indirect
 	github.com/multiformats/go-multistream v0.2.2 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
@@ -166,7 +164,7 @@ require (
 	github.com/pion/transport/v2 v2.0.0 // indirect
 	github.com/pion/turn/v2 v2.0.8 // indirect
 	github.com/pion/udp v0.1.4 // indirect
-	github.com/polydawn/refmt v0.0.0-20190807091052-3d65705ee9f1 // indirect
+	github.com/polydawn/refmt v0.0.0-20201211092308-30ac6d18308e // indirect
 	github.com/prometheus/client_golang v1.12.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
